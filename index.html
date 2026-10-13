@@ -72,7 +72,18 @@ async function startCamera(){
     message("Uruchamiam kamerę i skaner kodów…");
     // Let ZXing acquire the camera and attach its stream to the preview itself.
     // This is the library's standard path and avoids attaching the same stream twice on iOS Safari.
+    scanAttempts=0;lastScanDebug=Date.now();
     zxingControls=await reader.decodeFromVideoDevice(undefined,$("video"),(result,error)=>{
+      scanAttempts++;
+      if(error && !["NotFoundException","ChecksumException","FormatException"].includes(error.name)){
+        message("Błąd dekodera: "+(error.name||"nieznany")+" — "+(error.message||"brak szczegółów"));
+      }else if(Date.now()-lastScanDebug>4000){
+        lastScanDebug=Date.now();
+        const video=$("video");
+        const track=video.srcObject&&video.srcObject.getVideoTracks?video.srcObject.getVideoTracks()[0]:null;
+        const settings=track&&track.getSettings?track.getSettings():{};
+        message("Skaner analizuje obraz ("+(video.videoWidth||0)+"×"+(video.videoHeight||0)+", prób: "+scanAttempts+(settings.facingMode?", kamera: "+settings.facingMode:"")+"). Pokaż cały kod kreskowy z bliska i bez odblasków.");
+      }
       if(result){
         const code=result.getText();
         if(code && code!==scanTimer){
