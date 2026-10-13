@@ -20,7 +20,7 @@
 <div class="collection-head"><div><div class="eyebrow">Kolekcja testowa</div><h2>Postacie do odkrycia</h2></div><span class="pill" id="progressText">0 / 12 odkrytych</span></div><section id="collection" class="grid" aria-label="Kolekcja postaci"></section>
 <footer>Nieoficjalny fanowski eksperyment. Pokémon i powiązane znaki towarowe oraz postacie należą do odpowiednich właścicieli. Brak afiliacji i oficjalnych grafik. Dane są przechowywane lokalnie. Warstwa LocalCollectionStore może być w przyszłości zastąpiona synchronizacją konta.</footer>
 </main>
-<script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
+<script src="https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
 <script>
 const CREATURES=[
 {id:"bulbasaur",name:"Bulbasaur",emoji:"🌱",type:"Trawa",desc:"Roślinny starter z testowej kolekcji."},
@@ -70,18 +70,6 @@ async function startCamera(){
     $("start").disabled=true;
     $("stop").disabled=false;
 
-    if("BarcodeDetector" in window){
-      try{
-        detector=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
-        scanning=true;
-        message("Kamera działa — ustaw kod w kadrze.");
-        scanLoop();
-        return;
-      }catch(e){
-        detector=null;
-      }
-    }
-
     if(!window.ZXingBrowser){
       message("Kamera działa, ale nie załadowała się biblioteka skanera. Sprawdź internet i odśwież stronę.");
       stopCamera();
@@ -94,12 +82,13 @@ async function startCamera(){
         const code=result.getText();
         if(code&&code!==scanTimer){
           scanTimer=code;
-          collect(code);
+          collect(code).catch(()=>message("Odczytano kod, ale nie udało się zapisać wyniku."));
           setTimeout(()=>{scanTimer=null},1800);
         }
       }
+      // Checksum/format errors are normal while the camera sees an incomplete barcode.
     });
-    message("Kamera działa — ustaw kod kreskowy w kadrze.");
+    message("Kamera działa — ustaw kod kreskowy w kadrze, wypełnij nim obraz i trzymaj telefon nieruchomo.");
   }catch(e){
     const name=e&&e.name?e.name:"";
     if(name==="NotAllowedError"||name==="SecurityError"){
