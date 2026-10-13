@@ -17,7 +17,8 @@
 <p class="note">Używaj wyłącznie jako eksperymentu fanowskiego. W razie zastrzeżeń właściciela praw projekt należy wyłączyć lub zmienić.</p></div>
 <div class="panel"><h2>✨ Twoja kolekcja</h2><p>Nowy kod odkrywa jedną ze 151 postaci pierwszej generacji. Duplikaty dają XP. Przypisanie EAN jest losowo-demonstracyjne i nie rozpoznaje prawdziwego produktu.</p><div class="stats"><div class="stat"><strong id="count">0</strong><span>odkryte wpisy</span></div><div class="stat"><strong id="xp">0</strong><span>punktów XP</span></div><div class="stat"><strong id="scans">0</strong><span>skany łącznie</span></div></div><div class="actions"><button id="export" class="secondary">Eksportuj zapis</button><button id="reset" class="secondary">Wyczyść zapis</button></div><p class="note">Zapis jest przypisany do tej przeglądarki. Możesz wyeksportować jego kopię.</p></div>
 </section>
-<div class="collection-head"><div><div class="eyebrow">Pokédex Kanto</div><h2>Pierwsze 151 Pokémonów</h2></div><span class="pill" id="progressText">0 / 12 odkrytych</span></div><div class="collection-tools" role="search"><input id="search" type="search" placeholder="Szukaj nazwy lub numeru Pokédexu…" aria-label="Szukaj Pokémonów"><select id="collectionFilter" aria-label="Filtr kolekcji"><option value="all">Wszystkie 151</option><option value="found">Odkryte</option><option value="missing">Nieodkryte</option></select><span id="resultCount" class="pill">151 Pokémonów</span></div>\n<section id="collection" class="grid" aria-label="Pokédex Pokémonów"></section>
+<div class="collection-head"><div><div class="eyebrow">Pokédex Kanto</div><h2>Pierwsze 151 Pokémonów</h2></div><span class="pill" id="progressText">0 / 12 odkrytych</span></div><div class="collection-tools" role="search"><input id="search" type="search" placeholder="Szukaj nazwy lub numeru Pokédexu…" aria-label="Szukaj Pokémonów"><select id="collectionFilter" aria-label="Filtr kolekcji"><option value="all">Wszystkie 151</option><option value="found">Odkryte</option><option value="missing">Nieodkryte</option></select><span id="resultCount" class="pill">151 Pokémonów</span></div>
+<section id="collection" class="grid" aria-label="Pokédex Pokémonów"></section>
 <div id="pokemonModal" class="pokemon-modal" role="dialog" aria-modal="true" aria-labelledby="pokemonModalName" aria-describedby="pokemonModalDesc">
   <div class="pokemon-card">
     <button id="pokemonModalClose" class="pokemon-close" type="button" aria-label="Zamknij okno">×</button>
@@ -370,6 +371,107 @@ async function collect(raw){
   }
   try{render()}catch(err){console.error("Nie udało się odświeżyć kolekcji",err)}
   return true;
+}
+$("search").addEventListener("input",render);
+$("collectionFilter").addEventListener("change",render);
+$("collection").addEventListener("click",e=>{const card=e.target.closest("[data-pokemon]");if(!card||e.target.closest("a"))return;const creature=CREATURES.find(x=>x.dex===Number(card.dataset.pokemon));if(creature)showPokedexDetails(creature)});
+$("collection").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-pokemon]")){e.preventDefault();const creature=CREATURES.find(x=>x.dex===Number(e.target.dataset.pokemon));if(creature)showPokedexDetails(creature)}});
+$("add").addEventListener("click",()=>collect($("ean").value));$("ean").addEventListener("keydown",e=>{if(e.key==="Enter")collect($("ean").value)});
+$("export").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="kaucja-poksy-zapis.json";a.click();URL.revokeObjectURL(url);message("Przygotowano kopię zapisu.")});
+$("reset").addEventListener("click",async()=>{if(confirm("Na pewno usunąć całą kolekcję z tej przeglądarki? Tej operacji nie można cofnąć.")){state={version:1,xp:0,scans:0,entries:{}};await store.save(state);render();message("Zapis wyczyszczony.")}});
+async function startCamera(){
+  if(scanSucceeded){scanSucceeded=false}
+  const generation=++scanGeneration;
+  if(!window.isSecureContext){
+    message("Kamera wymaga bezpiecznego połączenia HTTPS. Otwórz stronę przez https://.");
+    return;
+  }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    message("Ta przeglądarka nie udostępnia kamery. Otwórz stronę w aktualnym Safari.");
+    return;
+  }
+  if(!window.ZXingBrowser || !window.ZXingBrowser.BrowserMultiFormatReader){
+    message("Nie załadował się skaner kodów (ZXing). Sprawdź połączenie z internetem i odśwież stronę.");
+    return;
+  }
+  try{
+    $("start").disabled=true;
+    $("video").classList.add("active");
+    // Give product-barcode decoding more effort and limit formats to common retail codes.
+    const hints=new Map();
+    const Hint=ZXingBrowser.DecodeHintType;
+    const Format=ZXingBrowser.BarcodeFormat;
+    if(Hint&&Hint.TRY_HARDER)hints.set(Hint.TRY_HARDER,true);
+    if(Hint&&Hint.POSSIBLE_FORMATS&&Format){
+      const formats=[Format.EAN_13,Format.EAN_8,Format.UPC_A,Format.UPC_E].filter(Boolean);
+      if(formats.length)hints.set(Hint.POSSIBLE_FORMATS,formats);
+    }
+    const reader=new ZXingBrowser.BrowserMultiFormatReader(hints.size?hints:undefined,{delayBetweenScanAttempts:100,delayBetweenScanSuccess:350});
+    message("Uruchamiam kamerę i skaner kodów…");
+    // Let ZXing acquire the camera and attach its stream to the preview itself.
+    // This is the library's standard path and avoids attaching the same stream twice on iOS Safari.
+    scanAttempts=0;lastScanDebug=Date.now();
+    const onDecode=(result,error)=>{
+      if(generation!==scanGeneration||scanSucceeded)return;
+      scanAttempts++;
+      if(result){
+        const code=result.getText();
+        if(code && code!==scanTimer){
+          scanSucceeded=true;
+          scanTimer=code;
+          scanGeneration++;
+          if(zxingControls){try{zxingControls.stop()}catch{}zxingControls=null}
+          const video=$("video");
+          const tracks=video.srcObject&&video.srcObject.getTracks?video.srcObject.getTracks():[];
+          tracks.forEach(track=>track.stop());
+          video.srcObject=null;
+          video.classList.remove("active");
+          $("start").disabled=false;
+          $("stop").disabled=true;
+          collect(code).then(()=>{scanTimer=null}).catch(()=>message("Odczytano kod, ale nie udało się zapisać wyniku."));
+          return;
+        }
+      }
+      // Misses are normal while the camera is looking for a barcode.
+      const errorText=error&&String(error.message||error);
+      const normalMiss=!!(!result && errorText && /No MultiFormat Readers were able to detect the code|NotFoundException/i.test(errorText));
+      if(error && !normalMiss && !["NotFoundException","ChecksumException","FormatException","e"].includes(error.name)){
+        message("Błąd dekodera: "+(error.name||"nieznany")+" — "+(error.message||"brak szczegółów"));
+      }else if(Date.now()-lastScanDebug>4000){
+        lastScanDebug=Date.now();
+        const video=$("video");
+        const track=video.srcObject&&video.srcObject.getVideoTracks?video.srcObject.getVideoTracks()[0]:null;
+        const settings=track&&track.getSettings?track.getSettings():{};
+        message("Skaner analizuje obraz ("+(video.videoWidth||0)+"×"+(video.videoHeight||0)+", prób: "+scanAttempts+(settings.facingMode?", kamera: "+settings.facingMode:"")+"). Ustaw kod poziomo, wypełnij nim kadr i unikaj odblasków.");
+      }
+    };
+    // Prefer the rear camera on phones instead of accepting the browser's default camera.
+    zxingControls=await reader.decodeFromConstraints(
+      {video:{
+        facingMode:{ideal:"environment"},
+        width:{ideal:1920},
+        height:{ideal:1080},
+        frameRate:{ideal:30},
+        advanced:[{focusMode:"continuous"},{exposureMode:"continuous"},{whiteBalanceMode:"continuous"}]
+      }},
+      $("video"),
+      onDecode
+    );
+    $("stop").disabled=false;
+    message("Skaner działa. Czytnik używa dokładniejszego trybu dekodowania i automatycznej ostrości, jeśli kamera ją obsługuje.");
+  }catch(e){
+    const name=e&&e.name?e.name:"";
+    if(name==="NotAllowedError"||name==="SecurityError"){
+      message("Brak dostępu do kamery. Zezwól na kamerę w ustawieniach Safari dla tej strony.");
+    }else if(name==="NotFoundError"||name==="DevicesNotFoundError"){
+      message("Nie znaleziono kamery w tym urządzeniu.");
+    }else if(name==="NotReadableError"||name==="TrackStartError"){
+      message("Kamera jest zajęta przez inną aplikację. Zamknij ją i spróbuj ponownie.");
+    }else{
+      message("Nie udało się uruchomić skanera ("+(name||"błąd nieznany")+"). Odśwież stronę i spróbuj ponownie.");
+    }
+    stopCamera();
+  }
 }
 function stopCamera(){scanGeneration++;scanning=false;if(zxingControls){try{zxingControls.stop()}catch{}zxingControls=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null} $("video").srcObject=null;$("video").classList.remove("active");$("start").disabled=false;$("stop").disabled=true}
 $("start").addEventListener("click",startCamera);$("stop").addEventListener("click",stopCamera);
