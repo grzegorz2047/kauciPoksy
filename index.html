@@ -77,26 +77,38 @@ $("pokemonModalOk").addEventListener("click",closePokemonPopup);
 $("pokemonModal").addEventListener("click",e=>{if(e.target===$("pokemonModal"))closePokemonPopup()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closePokemonPopup()});
 async function collect(raw){
-  const ean=raw.trim();
-  if(!validEAN(ean)){message("Wpisz kod kreskowy o długości 8, 12, 13 lub 14 cyfr.");return}
-  const previous=state.entries[ean];
-  state.scans++;
-  state.xp+=previous?1:5;
-  let creature,isDuplicate=!!previous;
-  if(previous){
-    creature=CREATURES.find(c=>c.id===previous.creatureId);
-    previous.xp++;previous.times++;previous.lastSeen=new Date().toISOString();
+  const ean=String(raw??"").trim();
+  if(!validEAN(ean)){message("Wpisz kod kreskowy o długości 8, 12, 13 lub 14 cyfr.");return false}
+  if(!state){message("Aplikacja jeszcze się uruchamia. Spróbuj ponownie za chwilę.");return false}
+  let previous=state.entries[ean];
+  const isDuplicate=!!previous;
+  let creature=previous?CREATURES.find(c=>c.id===previous.creatureId):chooseCreature(ean);
+  // Recover gracefully if an older/corrupt local save contains an unknown creature ID.
+  if(!creature)creature=chooseCreature(ean);
+  state.scans=(Number(state.scans)||0)+1;
+  state.xp=(Number(state.xp)||0)+(isDuplicate?1:5);
+  const now=new Date().toISOString();
+  if(isDuplicate){
+    previous.creatureId=creature.id;
+    previous.xp=(Number(previous.xp)||0)+1;
+    previous.times=(Number(previous.times)||1)+1;
+    previous.lastSeen=now;
     message("Duplikat! "+creature.name+" zdobywa 1 XP.");
   }else{
-    creature=chooseCreature(ean);
-    state.entries[ean]={ean,creatureId:creature.id,xp:0,times:1,firstSeen:new Date().toISOString(),lastSeen:new Date().toISOString()};
+    state.entries[ean]={ean,creatureId:creature.id,xp:0,times:1,firstSeen:now,lastSeen:now};
     message("Odkryto: "+creature.name+" "+creature.emoji+"! +5 XP");
   }
-  let saved=true;
-  try{await store.save(state);render()}
-  catch{saved=false;message("Nie udało się zapisać danych. Sprawdź ustawienia prywatności przeglądarki.")}
+  // Show the discovery immediately; storage/render failures must not suppress the popup.
+  try{showPokemonPopup(creature,isDuplicate)}catch(err){console.error("Nie udało się pokazać okna Pokémona",err)}
   $("ean").value="";
-  showPokemonPopup(creature,isDuplicate);
+  try{
+    await store.save(state);
+  }catch(err){
+    console.error("Nie udało się zapisać kolekcji",err);
+    message("Pokémon został znaleziony, ale nie udało się zapisać danych. Sprawdź ustawienia prywatności przeglądarki.");
+  }
+  try{render()}catch(err){console.error("Nie udało się odświeżyć kolekcji",err)}
+  return true;
 }
 $("add").addEventListener("click",()=>collect($("ean").value));$("ean").addEventListener("keydown",e=>{if(e.key==="Enter")collect($("ean").value)});
 $("export").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="kaucja-poksy-zapis.json";a.click();URL.revokeObjectURL(url);message("Przygotowano kopię zapisu.")});
