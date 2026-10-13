@@ -316,6 +316,20 @@ $("pokemonModalClose").addEventListener("click",closePokemonPopup);
 $("pokemonModalOk").addEventListener("click",closePokemonPopup);
 $("pokemonModal").addEventListener("click",e=>{if(e.target===$("pokemonModal"))closePokemonPopup()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closePokemonPopup()});
+let captureAudioContext=null;
+function unlockCaptureAudio(){
+  try{const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;if(!captureAudioContext)captureAudioContext=new AudioCtx();if(captureAudioContext.state==="suspended")captureAudioContext.resume().catch(()=>{});}catch(err){console.debug("Dźwięk złapania niedostępny",err)}
+}
+function playCaptureSound(){
+  try{
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;
+    if(!captureAudioContext)captureAudioContext=new AudioCtx();
+    const ctx=captureAudioContext;if(ctx.state==="suspended")ctx.resume().catch(()=>{});if(ctx.state==="closed")return;
+    // Oryginalna, lokalnie syntezowana fanfara w stylu retro 8-bit.
+    const notes=[659.25,783.99,987.77,1318.51,987.77,1174.66,1567.98],start=ctx.currentTime+0.025;
+    notes.forEach((frequency,index)=>{const at=start+index*0.105,osc=ctx.createOscillator(),gain=ctx.createGain();osc.type="square";osc.frequency.setValueAtTime(frequency,at);gain.gain.setValueAtTime(0.0001,at);gain.gain.exponentialRampToValueAtTime(0.075,at+0.012);gain.gain.exponentialRampToValueAtTime(0.0001,at+0.095);osc.connect(gain);gain.connect(ctx.destination);osc.start(at);osc.stop(at+0.1)});
+  }catch(err){console.debug("Nie udało się odtworzyć dźwięku złapania",err)}
+}
 async function lookupEligibleBeverage(ean){
   const fields="product_name,categories,categories_tags,packaging,packaging_tags,brands,quantity";
   const endpoints=["https://world.openfoodfacts.org/api/v2/product/","https://world.openfoodfacts.net/api/v2/product/"];
@@ -384,6 +398,7 @@ async function collect(raw){
     message("Potwierdzono napój: "+product.productName+". Duplikat! "+creature.name+" zdobywa 1 XP.");
   }else{
     state.entries[ean]={ean,creatureId:creature.id,xp:0,times:1,firstSeen:now,lastSeen:now};
+    playCaptureSound();
     message("Napój potwierdzony: "+product.productName+". Odkryto: "+creature.name+" ✨! +5 XP");
   }
   try{showPokemonPopup(creature,isDuplicate)}catch(err){console.error("Nie udało się pokazać okna Pokémona",err)}
@@ -399,7 +414,7 @@ $("search").addEventListener("input",render);
 $("collectionFilter").addEventListener("change",render);
 $("collection").addEventListener("click",e=>{const card=e.target.closest("[data-pokemon]");if(!card||e.target.closest("a"))return;const creature=CREATURES.find(x=>x.dex===Number(card.dataset.pokemon));if(creature)showPokedexDetails(creature)});
 $("collection").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-pokemon]")){e.preventDefault();const creature=CREATURES.find(x=>x.dex===Number(e.target.dataset.pokemon));if(creature)showPokedexDetails(creature)}});
-$("add").addEventListener("click",()=>collect($("ean").value));$("ean").addEventListener("keydown",e=>{if(e.key==="Enter")collect($("ean").value)});
+$("add").addEventListener("click",()=>{unlockCaptureAudio();collect($("ean").value)});$("ean").addEventListener("keydown",e=>{if(e.key==="Enter"){unlockCaptureAudio();collect($("ean").value)}});
 $("export").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="kaucja-poksy-zapis.json";a.click();URL.revokeObjectURL(url);message("Przygotowano kopię zapisu.")});
 $("reset").addEventListener("click",async()=>{if(confirm("Na pewno usunąć całą kolekcję z tej przeglądarki? Tej operacji nie można cofnąć.")){state={version:1,xp:0,scans:0,entries:{}};await store.save(state);render();message("Zapis wyczyszczony.")}});
 async function startCamera(){
@@ -497,7 +512,7 @@ async function startCamera(){
   }
 }
 function stopCamera(){scanGeneration++;scanning=false;if(zxingControls){try{zxingControls.stop()}catch{}zxingControls=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null} $("video").srcObject=null;$("video").classList.remove("active");$("start").disabled=false;$("stop").disabled=true}
-$("start").addEventListener("click",startCamera);$("stop").addEventListener("click",stopCamera);
+$("start").addEventListener("click",()=>{unlockCaptureAudio();startCamera()});$("stop").addEventListener("click",stopCamera);
 store.load().then(data=>{state={version:1,xp:Number(data.xp)||0,scans:Number(data.scans)||0,entries:data.entries&&typeof data.entries==="object"?data.entries:{}};render()});
 window.addEventListener("pagehide",stopCamera);
 </script></body></html>
