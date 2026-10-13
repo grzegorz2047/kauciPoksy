@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#171b32"><title>KaucjaPoksy — fanowski projekt</title>
 <style>
-:root{color-scheme:dark;--bg:#101226;--panel:#1b2040;--panel2:#272e54;--ink:#f7f7ff;--muted:#b6bddb;--accent:#ffcf65;--line:#373f68;--blue:#9be7ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#383466 0,#101226 58%);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}main{max-width:1050px;margin:auto;padding:24px 16px 60px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:12px}.logo{font-size:38px}.eyebrow{color:var(--accent);text-transform:uppercase;letter-spacing:.15em;font-size:12px;font-weight:800}h1{font-size:clamp(28px,5vw,44px);line-height:1.1;margin:4px 0}p{color:var(--muted);margin:8px 0}.pill{border:1px solid var(--line);padding:7px 12px;border-radius:999px;color:var(--muted);font-size:13px}.notice{border:1px solid #8d7044;background:#3a2c25;border-radius:14px;padding:12px 15px;color:#ffe5b0;margin-top:22px;font-size:13px}.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin:20px 0 28px}.panel{background:linear-gradient(145deg,#242b50,#171b34);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 15px 50px #0002}.panel h2{margin:0 0 12px;font-size:20px}.formrow{display:flex;gap:8px;margin-top:14px}.formrow input{min-width:0;flex:1}input{background:#11152b;border:1px solid #4a5481;border-radius:12px;padding:13px 14px;color:var(--ink);font:inherit}button{border:0;border-radius:12px;padding:12px 16px;font:inherit;font-weight:750;cursor:pointer;background:var(--accent);color:#261b08}button.secondary{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}button:disabled{opacity:.5;cursor:not-allowed}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.status{min-height:26px;color:var(--accent);font-size:14px;margin-top:10px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}.stat{background:#11152ba8;border:1px solid var(--line);border-radius:14px;padding:12px}.stat strong{display:block;font-size:24px}.stat span{font-size:12px;color:var(--muted)}.collection-tools{display:grid;grid-template-columns:minmax(0,1fr) 190px auto;gap:10px;margin:0 0 14px}.collection-tools input,.collection-tools select{width:100%;min-width:0;background:#11152b;border:1px solid #4a5481;border-radius:12px;padding:12px;color:var(--ink);font:inherit}.creature{cursor:pointer;transition:transform .15s,border-color .15s}.creature:hover{transform:translateY(-2px);border-color:#7f8bd0}.collection-head{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;margin:28px 0 12px}.collection-head h2{margin:0}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.creature{border:1px solid var(--line);background:linear-gradient(160deg,#242b50,#171b34);border-radius:18px;padding:16px;min-width:0}.creature.locked{opacity:.55;filter:saturate(.25)}.art{height:150px;display:grid;place-items:center;background:#10142aa6;border-radius:14px;margin-bottom:12px;overflow:hidden}.art img{width:100%;height:100%;object-fit:contain;padding:8px}.dex-number{font-size:11px;color:var(--muted);letter-spacing:.08em;font-weight:800}.wiki-link{display:inline-block;margin-top:8px;color:var(--blue);font-size:12px;text-decoration:underline;text-underline-offset:3px}.pokemon-art{width:180px;height:180px;max-width:100%;object-fit:contain;filter:drop-shadow(0 8px 18px #0005)}.creature h3{margin:0;font-size:17px}.creature p{font-size:13px;min-height:40px}.meta{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:6px;margin-top:8px}.progress{height:7px;background:#11152b;border-radius:99px;overflow:hidden;margin-top:7px}.progress span{display:block;height:100%;background:var(--accent)}.camera{display:none;width:100%;max-height:280px;object-fit:cover;border-radius:14px;background:#05080e;margin-top:12px}.camera.active{display:block}.note{font-size:12px}.pokemon-modal{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;background:#080a18d9;backdrop-filter:blur(7px)}.pokemon-modal.open{display:flex}.pokemon-card{position:relative;width:min(100%,390px);text-align:center;padding:28px 24px 24px;border:1px solid #666fa2;border-radius:26px;background:radial-gradient(ellipse at top,#41457d 0,#222747 52%,#171b34 100%);box-shadow:0 24px 90px #0009;animation:pop-in .22s ease-out}.pokemon-card .eyebrow{margin-bottom:6px}.pokemon-spark{font-size:76px;line-height:1.25;margin:10px 0 8px;filter:drop-shadow(0 8px 16px #0005)}.pokemon-card h2{font-size:30px;margin:4px 0}.pokemon-card p{margin:8px 0 18px}.pokemon-badge{display:inline-block;border:1px solid #626b9d;background:#11152b88;color:#e9edff;border-radius:999px;padding:5px 12px;font-size:13px;margin-top:4px}.pokemon-close{position:absolute;top:10px;right:10px;width:40px;height:40px;padding:0;border-radius:50%;font-size:23px;background:#11152b;color:var(--ink);border:1px solid var(--line)}@keyframes pop-in{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}@media(prefers-reduced-motion:reduce){.pokemon-card{animation:none}}footer{border-top:1px solid var(--line);margin-top:32px;padding-top:18px;color:var(--muted);font-size:12px}@media(max-width:700px){.collection-tools{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:17px}}@media(max-width:390px){.grid{grid-template-columns:1fr}.formrow{flex-direction:column}}
+:root{color-scheme:dark;--bg:#101226;--panel:#1b2040;--panel2:#272e54;--ink:#f7f7ff;--muted:#b6bddb;--accent:#ffcf65;--line:#373f68;--blue:#9be7ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#383466 0,#101226 58%);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}main{max-width:1050px;margin:auto;padding:24px 16px 60px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:12px}.logo{font-size:38px}.eyebrow{color:var(--accent);text-transform:uppercase;letter-spacing:.15em;font-size:12px;font-weight:800}h1{font-size:clamp(28px,5vw,44px);line-height:1.1;margin:4px 0}p{color:var(--muted);margin:8px 0}.pill{border:1px solid var(--line);padding:7px 12px;border-radius:999px;color:var(--muted);font-size:13px}.notice{border:1px solid #8d7044;background:#3a2c25;border-radius:14px;padding:12px 15px;color:#ffe5b0;margin-top:22px;font-size:13px}.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin:20px 0 28px}.panel{background:linear-gradient(145deg,#242b50,#171b34);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 15px 50px #0002}.panel h2{margin:0 0 12px;font-size:20px}.formrow{display:flex;gap:8px;margin-top:14px}.formrow input{min-width:0;flex:1}input{background:#11152b;border:1px solid #4a5481;border-radius:12px;padding:13px 14px;color:var(--ink);font:inherit}button{border:0;border-radius:12px;padding:12px 16px;font:inherit;font-weight:750;cursor:pointer;background:var(--accent);color:#261b08}button.secondary{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}button:disabled{opacity:.5;cursor:not-allowed}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.status{min-height:26px;color:var(--accent);font-size:14px;margin-top:10px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}.stat{background:#11152ba8;border:1px solid var(--line);border-radius:14px;padding:12px}.stat strong{display:block;font-size:24px}.stat span{font-size:12px;color:var(--muted)}.collection-tools{display:grid;grid-template-columns:minmax(0,1fr) 190px auto;gap:10px;margin:0 0 14px}.collection-tools input,.collection-tools select{width:100%;min-width:0;background:#11152b;border:1px solid #4a5481;border-radius:12px;padding:12px;color:var(--ink);font:inherit}.creature{cursor:pointer;transition:transform .15s,border-color .15s}.creature:hover{transform:translateY(-2px);border-color:#7f8bd0}.collection-head{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;margin:28px 0 12px}.collection-head h2{margin:0}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.creature{border:1px solid var(--line);background:linear-gradient(160deg,#242b50,#171b34);border-radius:18px;padding:16px;min-width:0}.creature.locked{opacity:.55;filter:saturate(.25)}.art{height:150px;display:grid;place-items:center;background:#10142aa6;border-radius:14px;margin-bottom:12px;overflow:hidden}.art img{width:100%;height:100%;object-fit:contain;padding:8px}.dex-number{font-size:11px;color:var(--muted);letter-spacing:.08em;font-weight:800}.wiki-link{display:inline-block;margin-top:8px;color:var(--blue);font-size:12px;text-decoration:underline;text-underline-offset:3px}.pokemon-art{display:block;width:180px;height:180px;max-width:100%;object-fit:contain;margin:10px auto 8px;justify-self:center;align-self:center;filter:drop-shadow(0 8px 18px #0005)}.creature h3{margin:0;font-size:17px}.creature p{font-size:13px;min-height:40px}.meta{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:6px;margin-top:8px}.progress{height:7px;background:#11152b;border-radius:99px;overflow:hidden;margin-top:7px}.progress span{display:block;height:100%;background:var(--accent)}.camera{display:none;width:100%;max-height:280px;object-fit:cover;border-radius:14px;background:#05080e;margin-top:12px}.camera.active{display:block}.note{font-size:12px}.pokemon-modal{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;background:#080a18d9;backdrop-filter:blur(7px)}.pokemon-modal.open{display:flex}.pokemon-card{position:relative;width:min(100%,390px);text-align:center;padding:28px 24px 24px;border:1px solid #666fa2;border-radius:26px;background:radial-gradient(ellipse at top,#41457d 0,#222747 52%,#171b34 100%);box-shadow:0 24px 90px #0009;animation:pop-in .22s ease-out}.pokemon-card .eyebrow{margin-bottom:6px}.pokemon-spark{font-size:76px;line-height:1.25;margin:10px 0 8px;filter:drop-shadow(0 8px 16px #0005)}.pokemon-card h2{font-size:30px;margin:4px 0}.pokemon-card p{margin:8px 0 18px}.pokemon-badge{display:inline-block;border:1px solid #626b9d;background:#11152b88;color:#e9edff;border-radius:999px;padding:5px 12px;font-size:13px;margin-top:4px}.pokemon-close{position:absolute;top:10px;right:10px;width:40px;height:40px;padding:0;border-radius:50%;font-size:23px;background:#11152b;color:var(--ink);border:1px solid var(--line)}@keyframes pop-in{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}@media(prefers-reduced-motion:reduce){.pokemon-card{animation:none}}footer{border-top:1px solid var(--line);margin-top:32px;padding-top:18px;color:var(--muted);font-size:12px}@media(max-width:700px){.collection-tools{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:17px}}@media(max-width:390px){.grid{grid-template-columns:1fr}.formrow{flex-direction:column}}
 </style>
 </head>
 <body><main>
@@ -198,23 +198,25 @@ function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i)
 function chooseCreature(ean){return CREATURES[hash(ean)%CREATURES.length]}
 function validEAN(value){return /^(?:\d{8}|\d{12,14})$/.test(value)}
 function render(){
- const entries=state.entries;
- const found=new Set(Object.values(entries).map(x=>x.creatureId));
- $("count").textContent=found.size;$("xp").textContent=state.xp;$("scans").textContent=state.scans;
- $("progressText").textContent=found.size+" / "+CREATURES.length+" odkrytych";
- const query=(($("search")&&$("search").value)||"").trim().toLocaleLowerCase("pl");
- const filter=$("collectionFilter")?$("collectionFilter").value:"all";
- const visible=CREATURES.filter(c=>{
-   const unlocked=found.has(c.id);
-   const matches=(c.name+" "+c.dex+" "+String(c.dex).padStart(3,"0")).toLocaleLowerCase("pl").includes(query);
-   return matches&&(filter==="all"||(filter==="found"&&unlocked)||(filter==="missing"&&!unlocked));
- });
- $("resultCount").textContent=visible.length+" Pokémonów";
- $("collection").innerHTML=visible.map(c=>{
-  const entry=Object.values(entries).filter(e=>e.creatureId===c.id).sort((a,b)=>b.xp-a.xp)[0];
-  const unlocked=!!entry,level=entry?1+Math.floor(entry.xp/5):0;
-  return '<article class="creature '+(unlocked?'':'locked')+'" data-pokemon="'+c.dex+'" tabindex="0" role="button" aria-label="Szczegóły: '+c.name+'"><div class="art"><img src="'+c.image+'" alt="'+c.name+'" loading="lazy" onerror="this.style.opacity=.15"></div><div class="dex-number">NATIONAL DEX #'+String(c.dex).padStart(3,'0')+'</div><h3>'+c.name+'</h3><p>'+(unlocked?c.desc:'Jeszcze nieodkryty — kliknij, aby poznać wpis Pokédexu.')+'</p><div class="meta"><span>'+(unlocked?c.type:'Nieodkryty')+'</span><span>'+(unlocked?'Poziom '+level:'Zablokowany')+'</span></div><div class="progress"><span style="width:'+(unlocked?Math.min(100,20+level*10):0)+'%"></span></div><a class="wiki-link" href="'+c.wiki+'" target="_blank" rel="noopener noreferrer">Wiki Pokémon ↗</a></article>';
- }).join('');
+  const entries=state.entries;
+  const found=new Set(Object.values(entries).map(x=>x.creatureId));
+  $("count").textContent=found.size;$("xp").textContent=state.xp;$("scans").textContent=state.scans;
+  $("progressText").textContent=found.size+" / "+CREATURES.length+" odkrytych";
+  const query=(($("search")&&$("search").value)||"").trim().toLocaleLowerCase("pl");
+  const filter=$("collectionFilter")?$("collectionFilter").value:"all";
+  const visible=CREATURES.filter(c=>{
+    const unlocked=found.has(c.id);
+    const matches=(c.name+" "+c.dex+" "+String(c.dex).padStart(3,"0")).toLocaleLowerCase("pl").includes(query);
+    return matches&&(filter==="all"||(filter==="found"&&unlocked)||(filter==="missing"&&!unlocked));
+  });
+  $("resultCount").textContent=visible.length+" Pokémonów";
+  $("collection").innerHTML=visible.map(c=>{
+   const entry=Object.values(entries).filter(e=>e.creatureId===c.id).sort((a,b)=>b.xp-a.xp)[0];
+   const unlocked=!!entry,level=entry?1+Math.floor(entry.xp/5):0;
+   const desc=unlocked?(c.desc&&!c.desc.startsWith("Otwórz szczegóły Pokédexu")&&!c.desc.includes("\\n")?c.desc:"Pobieram polski opis…"):'Jeszcze nieodkryty — kliknij, aby poznać wpis Pokédexu.';
+   return '<article class="creature '+(unlocked?'':'locked')+'" data-pokemon="'+c.dex+'" tabindex="0" role="button" aria-label="Szczegóły: '+c.name+'"><div class="art"><img src="'+c.image+'" alt="'+c.name+'" loading="lazy" onerror="this.style.opacity=.15"></div><div class="dex-number">NATIONAL DEX #'+String(c.dex).padStart(3,'0')+'</div><h3>'+c.name+'</h3><p data-description="'+c.dex+'">'+desc+'</p><div class="meta"><span data-type="'+c.dex+'">'+(unlocked?c.type:'Nieodkryty')+'</span><span>'+(unlocked?'Poziom '+level:'Zablokowany')+'</span></div><div class="progress"><span style="width:'+(unlocked?Math.min(100,20+level*10):0)+'%"></span></div><a class="wiki-link" href="'+c.wiki+'" target="_blank" rel="noopener noreferrer">Wiki Pokémon ↗</a></article>';
+  }).join('');
+  visible.filter(c=>found.has(c.id)).forEach(c=>loadListDescription(c));
 }
 function message(text){$("status").textContent=text}
 function showPokemonPopup(creature,isDuplicate){
@@ -225,6 +227,39 @@ function showPokemonPopup(creature,isDuplicate){
   $("pokemonModalDesc").textContent=creature.desc;
   $("pokemonModalXp").textContent=isDuplicate?"+1 XP — kolejny egzemplarz":"+5 XP — nowy wpis w kolekcji";
   const modal=$("pokemonModal");modal.classList.add("open");$("pokemonModalClose").focus();
+}
+const listDescriptionLoads=new Set();
+async function loadListDescription(creature){
+  if(listDescriptionLoads.has(creature.dex))return;
+  if(creature.desc&&!creature.desc.startsWith("Otwórz szczegóły Pokédexu")&&!creature.desc.includes("\\n"))return;
+  listDescriptionLoads.add(creature.dex);
+  const update=()=>{
+    const descNode=document.querySelector('[data-description="'+creature.dex+'"]');
+    const typeNode=document.querySelector('[data-type="'+creature.dex+'"]');
+    if(descNode)descNode.textContent=creature.desc||"Nie udało się pobrać opisu.";
+    if(typeNode)typeNode.textContent=creature.type||"Typ nieznany";
+  };
+  try{
+    const response=await fetch("https://pokeapi.co/api/v2/pokemon-species/"+creature.dex);
+    if(!response.ok)throw new Error("Species unavailable");
+    const species=await response.json();
+    const normalize=text=>text.replaceAll("\\n"," ").replaceAll("\\f"," ").replace(/[\n\f\r\t]/g," ").replace(/\s+/g," ").trim();
+    const polish=species.flavor_text_entries.find(x=>x.language.name==="pl");
+    const english=species.flavor_text_entries.find(x=>x.language.name==="en")||species.flavor_text_entries[0];
+    let desc=polish?normalize(polish.flavor_text):"";
+    if(!desc&&english)desc=await translateDescriptionToPolish(normalize(english.flavor_text));
+    if(desc)creature.desc=desc;
+    const typeResponse=await fetch("https://pokeapi.co/api/v2/pokemon/"+creature.dex);
+    if(typeResponse.ok){
+      const pokemon=await typeResponse.json();
+      const names={normal:"Normalny",fire:"Ogień",water:"Woda",electric:"Elektryczny",grass:"Trawa",ice:"Lód",fighting:"Walka",poison:"Trujący",ground:"Ziemia",flying:"Latający",psychic:"Psychiczny",bug:"Robak",rock:"Skała",ghost:"Duch",dragon:"Smok",dark:"Mroczny",steel:"Stal",fairy:"Wróżka"};
+      creature.type=pokemon.types.map(t=>names[t.type.name]||t.type.name).join(" / ");
+    }
+    update();
+  }catch(error){
+    const descNode=document.querySelector('[data-description="'+creature.dex+'"]');
+    if(descNode)descNode.textContent=creature.desc&&!creature.desc.startsWith("Otwórz szczegóły Pokédexu")?creature.desc:"Nie udało się pobrać opisu — kliknij, aby spróbować ponownie.";
+  }finally{listDescriptionLoads.delete(creature.dex)}
 }
 async function translateDescriptionToPolish(text){
   // Google Translate public web endpoint; no API key required.
@@ -254,7 +289,7 @@ async function showPokedexDetails(creature){
     const typeNames={normal:"Normalny",fire:"Ogień",water:"Woda",electric:"Elektryczny",grass:"Trawa",ice:"Lód",fighting:"Walka",poison:"Trujący",ground:"Ziemia",flying:"Latający",psychic:"Psychiczny",bug:"Robak",rock:"Skała",ghost:"Duch",dragon:"Smok",dark:"Mroczny",steel:"Stal",fairy:"Wróżka"};
     creature.type=pokemon.types.map(t=>typeNames[t.type.name]||t.type.name).join(" / ");
     // Preferuj opis polski z PokéAPI. Gdy go brak, przetłumacz angielski opis automatycznie.
-    const normalizeText=text=>text.replace(/[\n\f]/g," ").replace(/\s+/g," ").trim();
+    const normalizeText=text=>text.replaceAll("\\n"," ").replaceAll("\\f"," ").replace(/[\n\f\r\t]/g," ").replace(/\s+/g," ").trim();
     const flavor=species.flavor_text_entries.find(x=>x.language.name==="pl");
     const polishFlavor=flavor?normalizeText(flavor.flavor_text):"";
     const hasPolishDescription=creature.desc && !creature.desc.startsWith("Otwórz szczegóły Pokédexu");
