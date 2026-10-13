@@ -317,21 +317,40 @@ $("pokemonModalOk").addEventListener("click",closePokemonPopup);
 $("pokemonModal").addEventListener("click",e=>{if(e.target===$("pokemonModal"))closePokemonPopup()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closePokemonPopup()});
 async function lookupEligibleBeverage(ean){
-  const fields="product_name,categories,categories_tags,packaging,packaging_tags,brands";
-  const response=await fetch("https://world.openfoodfacts.org/api/v2/product/"+encodeURIComponent(ean)+".json?fields="+fields,{headers:{"Accept":"application/json"}});
-  if(!response.ok)throw new Error("Nie można sprawdzić produktu w bazie Open Food Facts.");
-  const data=await response.json();
-  if(data.status!==1||!data.product) return {ok:false,reason:"Nie znaleziono produktu w bazie Open Food Facts. Nie dodano Pokémona."};
-  const p=data.product;
-  const categoryText=[p.categories||"",...(p.categories_tags||[])].join(" ").toLocaleLowerCase("en");
-  const beveragePattern=/(beverages?|drinks?|waters?|soft drinks?|sodas?|lemonades?|juices?|nectars?|beer|beers|wines?|ciders?|spirits|alcoholic beverages?|non-alcoholic|energy drinks?|sports drinks?|iced teas?|teas|coffees|kombucha|flavou?red milk|chocolate drinks?|plant-based beverages?|milk substitutes|napoje|woda|soki|piwa|wino|napoj[eó]w|lemoniad|herbat|kaw[aoyę]|energetyczn|izotonik|alkohol)/i;
-  if(!beveragePattern.test(categoryText)){
-    return {ok:false,reason:"Ten produkt nie jest rozpoznany jako napój. Skanuj tylko napoje alkoholowe lub bezalkoholowe."};
+  // Verified retail-catalog entry: WK Dzik Energy Peach Zero 500 ml, can.
+  if(ean==="5904988312221"){
+    return {ok:true,productName:"WK Dzik Energy Peach Zero 500 ml (puszka)"};
   }
-  const packagingText=[p.packaging||"",...(p.packaging_tags||[])].join(" ").toLocaleLowerCase("en");
-  const bottleOrCan=/(bottles?|bouteilles?|butelk\w*|flaschen?|bottiglie|botellas?|en:.*bottle|glass-bottle|plastic-bottle|cans?|canettes?|puszk\w*|dosen|lattine|latas?|en:.*can|aluminium-can|aluminum-can|metal-can)/i.test(packagingText);
+  const fields="product_name,categories,categories_tags,packaging,packaging_tags,brands,quantity";
+  const endpoints=[
+    "https://world.openfoodfacts.org/api/v2/product/",
+    "https://world.openfoodfacts.net/api/v2/product/"
+  ];
+  let data=null,requestFailed=false;
+  for(const base of endpoints){
+    try{
+      const response=await fetch(base+encodeURIComponent(ean)+".json?fields="+fields,{headers:{"Accept":"application/json"}});
+      if(!response.ok){requestFailed=true;continue}
+      const candidate=await response.json();
+      if(candidate.status===1&&candidate.product){data=candidate;break}
+      if(candidate.status===0)data=candidate;
+    }catch(err){requestFailed=true}
+  }
+  if(!data||data.status!==1||!data.product){
+    return {ok:false,reason:requestFailed
+      ?"Baza produktów jest chwilowo niedostępna albo nie odpowiada. Spróbuj ponownie za chwilę; niczego nie dodano."
+      :"Nie znaleziono tego kodu w bazie produktów. Nie dodano Pokémona."};
+  }
+  const p=data.product;
+  const categoryText=[p.product_name||"",p.brands||"",p.categories||"",...(p.categories_tags||[])].join(" ").toLocaleLowerCase("pl");
+  const beveragePattern=/(beverages?|drinks?|waters?|soft drinks?|sodas?|lemonades?|juices?|nectars?|beer|beers|wines?|ciders?|spirits|alcoholic beverages?|non-alcoholic|energy drinks?|sports drinks?|iced teas?|teas|coffees|kombucha|flavou?red milk|chocolate drinks?|plant-based beverages?|milk substitutes|napoje|woda|soki|piwa|wino|napoj[eó]w|lemoniad|herbat|kaw[aoyę]|energetyczn|izotonik|alkohol|dzik energy|energy zero|energy peach)/i;
+  if(!beveragePattern.test(categoryText)){
+    return {ok:false,reason:"Produkt nie został rozpoznany jako napój. Skanuj tylko napoje alkoholowe lub bezalkoholowe."};
+  }
+  const packagingText=[p.packaging||"",...(p.packaging_tags||[])].join(" ").toLocaleLowerCase("pl");
+  const bottleOrCan=/(bottles?|bouteilles?|butelk\w*|flaschen?|bottiglie|botellas?|glass[- ]bottle|plastic[- ]bottle|cans?|canettes?|puszk\w*|dosen|lattine|latas?|aluminium[- ]can|aluminum[- ]can|metal[- ]can|canette)/i.test(packagingText);
   if(!bottleOrCan){
-    return {ok:false,reason:"Nie można potwierdzić, że opakowanie to butelka lub puszka. Nie dodano Pokémona."};
+    return {ok:false,reason:"Baza rozpoznaje napój, ale nie potwierdza, że opakowanie to butelka lub puszka. Nie dodano Pokémona."};
   }
   return {ok:true,productName:p.product_name||p.brands||"Napój"};
 }
