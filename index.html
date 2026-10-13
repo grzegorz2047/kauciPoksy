@@ -317,24 +317,15 @@ $("pokemonModalOk").addEventListener("click",closePokemonPopup);
 $("pokemonModal").addEventListener("click",e=>{if(e.target===$("pokemonModal"))closePokemonPopup()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closePokemonPopup()});
 async function lookupEligibleBeverage(ean){
-  // Confirmed product entries: bypass catalog outages for known drinks.
-  if(ean==="5904988312221"){
-    return {ok:true,productName:"WK Dzik Energy Peach Zero 500 ml (puszka)"};
-  }
-  if(ean==="4251760806876"){
-    return {ok:true,productName:"Thomas Henry Piña Asada"};
-  }
   const fields="product_name,categories,categories_tags,packaging,packaging_tags,brands,quantity";
-  const endpoints=[
-    "https://world.openfoodfacts.org/api/v2/product/",
-    "https://world.openfoodfacts.net/api/v2/product/"
-  ];
-  let data=null,requestFailed=false,notFound=false;
+  const endpoints=["https://world.openfoodfacts.org/api/v2/product/","https://world.openfoodfacts.net/api/v2/product/"];
+  let data=null,requestFailed=false,notFound=false,successfulResponse=false;
   for(const base of endpoints){
     try{
       const response=await fetch(base+encodeURIComponent(ean)+".json?fields="+fields,{headers:{"Accept":"application/json"}});
-      if(response.status===404){notFound=true;continue}
+      if(response.status===404){successfulResponse=true;notFound=true;continue}
       if(!response.ok){requestFailed=true;continue}
+      successfulResponse=true;
       const candidate=await response.json();
       if(candidate.status===1&&candidate.product){data=candidate;break}
       if(candidate.status===0){notFound=true;continue}
@@ -342,24 +333,23 @@ async function lookupEligibleBeverage(ean){
     }catch(err){requestFailed=true}
   }
   if(!data||data.status!==1||!data.product){
-    return {ok:false,reason:requestFailed
-      ?"Nie udało się sprawdzić kodu w bazie (błąd sieci lub serwera). Spróbuj ponownie; kod nie został uznany za poprawny."
-      :notFound
-        ?"Nie znaleziono tego kodu w bazie produktów. Produkt może nie być dodany do Open Food Facts; niczego nie dodano."
-        :"Baza nie zwróciła rozpoznawalnego wyniku. Spróbuj ponownie; niczego nie dodano."};
+    if(!successfulResponse&&requestFailed){
+      return {ok:false,reason:"Nie udało się połączyć z bazą produktów (błąd sieci lub serwera). Spróbuj ponownie; niczego nie dodano.",code:"network_error"};
+    }
+    return {ok:false,reason:notFound
+      ?"Nie znaleziono tego kodu w Open Food Facts. Jeśli to rzeczywiście napój w butelce lub puszce, możesz potwierdzić to ręcznie."
+      :"Baza nie zwróciła rozpoznawalnego wyniku. Niczego nie dodano.",code:"not_found",needsConfirmation:true};
   }
   const p=data.product;
   const categoryText=[p.product_name||"",p.brands||"",p.categories||"",...(p.categories_tags||[])].join(" ").toLocaleLowerCase("pl");
-  const beveragePattern=/(beverages?|drinks?|waters?|soft drinks?|sodas?|lemonades?|juices?|nectars?|beer|beers|wines?|ciders?|spirits|alcoholic beverages?|non-alcoholic|energy drinks?|sports drinks?|iced teas?|teas|coffees|kombucha|flavou?red milk|chocolate drinks?|plant-based beverages?|milk substitutes|napoje|woda|soki|piwa|wino|napoj[eó]w|lemoniad|herbat|kaw[aoyę]|energetyczn|izotonik|alkohol|dzik energy|energy zero|energy peach)/i;
-  if(!beveragePattern.test(categoryText)){
-    return {ok:false,reason:"Produkt nie został rozpoznany jako napój. Skanuj tylko napoje alkoholowe lub bezalkoholowe."};
-  }
+  const beveragePattern=/(beverages?|drinks?|waters?|soft drinks?|sodas?|lemonades?|juices?|nectars?|beer|beers|wines?|ciders?|spirits|alcoholic beverages?|non-alcoholic|energy drinks?|sports drinks?|iced teas?|teas|coffees|kombucha|flavou?red milk|chocolate drinks?|plant-based beverages?|milk substitutes|napoje|woda|soki|piwa|wino|napoj[eó]w|lemoniad|herbat|kaw[aoyę]|energetyczn|izotonik|alkohol)/i;
+  const name=p.product_name||p.brands||"";
   const packagingText=[p.packaging||"",...(p.packaging_tags||[])].join(" ").toLocaleLowerCase("pl");
   const bottleOrCan=/(bottles?|bouteilles?|butelk\w*|flaschen?|bottiglie|botellas?|glass[- ]bottle|plastic[- ]bottle|cans?|canettes?|puszk\w*|dosen|lattine|latas?|aluminium[- ]can|aluminum[- ]can|metal[- ]can|canette)/i.test(packagingText);
-  if(!bottleOrCan){
-    return {ok:false,reason:"Baza rozpoznaje napój, ale nie potwierdza, że opakowanie to butelka lub puszka. Nie dodano Pokémona."};
+  if(!beveragePattern.test(categoryText)||!bottleOrCan){
+    return {ok:false,reason:"Baza znalazła produkt ("+(name||"bez nazwy")+") ale nie potwierdza jednoznacznie, że to napój w butelce lub puszce. Jeśli sprawdziłeś etykietę, możesz potwierdzić to ręcznie.",code:"incomplete_metadata",needsConfirmation:true,productName:name};
   }
-  return {ok:true,productName:p.product_name||p.brands||"Napój"};
+  return {ok:true,productName:name||"Napój"};
 }
 async function collect(raw){
   const ean=String(raw??"").trim();
@@ -371,7 +361,14 @@ async function collect(raw){
     message("Nie udało się zweryfikować produktu. Sprawdź internet i spróbuj ponownie; niczego nie dodano.");
     return false;
   }
-  if(!product.ok){message(product.reason);return false}
+  if(!product.ok){
+    if(product.needsConfirmation){
+      const detail=product.productName?"\n\nProdukt z bazy: "+product.productName:"";
+      const accepted=window.confirm(product.reason+detail+"\n\nPotwierdzasz, że skanowany produkt to napój w butelce lub puszce?");
+      if(!accepted){message("Nie dodano Pokémona — produkt nie został potwierdzony.");return false}
+      product={ok:true,productName:product.productName||"Napój (potwierdzony ręcznie)"};
+    }else{message(product.reason);return false}
+  }
   let previous=state.entries[ean];
   const isDuplicate=!!previous;
   let creature=previous?CREATURES.find(c=>c.id===previous.creatureId):chooseCreature(ean);
