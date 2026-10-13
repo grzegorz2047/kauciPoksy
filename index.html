@@ -41,7 +41,7 @@ class LocalCollectionStore{
  async load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||{version:1,xp:0,scans:0,entries:{}}}catch{return {version:1,xp:0,scans:0,entries:{}}}}
  async save(data){localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}
 }
-const store=new LocalCollectionStore();let state;let stream=null;let scanTimer=null;let detector=null;let scanning=false;let zxingControls=null;let scanAttempts=0;let lastScanDebug=0;
+const store=new LocalCollectionStore();let state;let stream=null;let scanTimer=null;let detector=null;let scanning=false;let zxingControls=null;let scanAttempts=0;let lastScanDebug=0;let scanSucceeded=false;let scanGeneration=0;
 const $=id=>document.getElementById(id);
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function chooseCreature(ean){return CREATURES[hash(ean)%CREATURES.length]}
@@ -53,6 +53,8 @@ $("add").addEventListener("click",()=>collect($("ean").value));$("ean").addEvent
 $("export").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="kaucja-poksy-zapis.json";a.click();URL.revokeObjectURL(url);message("Przygotowano kopię zapisu.")});
 $("reset").addEventListener("click",async()=>{if(confirm("Na pewno usunąć całą kolekcję z tej przeglądarki? Tej operacji nie można cofnąć.")){state={version:1,xp:0,scans:0,entries:{}};await store.save(state);render();message("Zapis wyczyszczony.")}});
 async function startCamera(){
+  if(scanSucceeded){scanSucceeded=false}
+  const generation=++scanGeneration;
   if(!window.isSecureContext){
     message("Kamera wymaga bezpiecznego połączenia HTTPS. Otwórz stronę przez https://.");
     return;
@@ -74,8 +76,27 @@ async function startCamera(){
     // This is the library's standard path and avoids attaching the same stream twice on iOS Safari.
     scanAttempts=0;lastScanDebug=Date.now();
     const onDecode=(result,error)=>{
+      if(generation!==scanGeneration||scanSucceeded)return;
       scanAttempts++;
-      // A frame without a readable barcode is normal during continuous scanning.
+      if(result){
+        const code=result.getText();
+        if(code && code!==scanTimer){
+          scanSucceeded=true;
+          scanTimer=code;
+          scanGeneration++;
+          if(zxingControls){try{zxingControls.stop()}catch{}zxingControls=null}
+          const video=$("video");
+          const tracks=video.srcObject&&video.srcObject.getTracks?video.srcObject.getTracks():[];
+          tracks.forEach(track=>track.stop());
+          video.srcObject=null;
+          video.classList.remove("active");
+          $("start").disabled=false;
+          $("stop").disabled=true;
+          collect(code).then(()=>{scanTimer=null}).catch(()=>message("Odczytano kod, ale nie udało się zapisać wyniku."));
+          return;
+        }
+      }
+      // Misses are normal while the camera is looking for a barcode.
       const errorText=error&&String(error.message||error);
       const normalMiss=!!(!result && errorText && /No MultiFormat Readers were able to detect the code|NotFoundException/i.test(errorText));
       if(error && !normalMiss && !["NotFoundException","ChecksumException","FormatException","e"].includes(error.name)){
@@ -86,14 +107,6 @@ async function startCamera(){
         const track=video.srcObject&&video.srcObject.getVideoTracks?video.srcObject.getVideoTracks()[0]:null;
         const settings=track&&track.getSettings?track.getSettings():{};
         message("Skaner analizuje obraz ("+(video.videoWidth||0)+"×"+(video.videoHeight||0)+", prób: "+scanAttempts+(settings.facingMode?", kamera: "+settings.facingMode:"")+"). Ustaw kod poziomo, wypełnij nim kadr i unikaj odblasków.");
-      }
-      if(result){
-        const code=result.getText();
-        if(code && code!==scanTimer){
-          scanTimer=code;
-          collect(code).catch(()=>message("Odczytano kod, ale nie udało się zapisać wyniku."));
-          setTimeout(()=>{scanTimer=null},1800);
-        }
       }
     };
     // Prefer the rear camera on phones instead of accepting the browser's default camera.
@@ -119,7 +132,7 @@ async function startCamera(){
   }
 }
 async function scanLoop(){if(!scanning)return;try{const codes=await detector.detect($("video"));if(codes.length){const code=codes[0].rawValue;if(code&&code!==scanTimer){scanTimer=code;await collect(code);setTimeout(()=>{scanTimer=null},1800)}}}catch{}requestAnimationFrame(scanLoop)}
-function stopCamera(){scanning=false;if(zxingControls){try{zxingControls.stop()}catch{}zxingControls=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null} $("video").srcObject=null;$("video").classList.remove("active");$("start").disabled=false;$("stop").disabled=true}
+function stopCamera(){scanGeneration++;scanning=false;if(zxingControls){try{zxingControls.stop()}catch{}zxingControls=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null} $("video").srcObject=null;$("video").classList.remove("active");$("start").disabled=false;$("stop").disabled=true}
 $("start").addEventListener("click",startCamera);$("stop").addEventListener("click",stopCamera);
 store.load().then(data=>{state={version:1,xp:Number(data.xp)||0,scans:Number(data.scans)||0,entries:data.entries&&typeof data.entries==="object"?data.entries:{}};render()});
 window.addEventListener("pagehide",stopCamera);
