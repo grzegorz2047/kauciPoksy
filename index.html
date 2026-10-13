@@ -339,7 +339,14 @@ async function loadListDescription(creature){
     const polish=species.flavor_text_entries.find(x=>x.language.name==="pl");
     const english=species.flavor_text_entries.find(x=>x.language.name==="en")||species.flavor_text_entries[0];
     let desc=polish?normalize(polish.flavor_text):"";
-    if(!desc&&english)desc=await translateDescriptionToPolish(normalize(english.flavor_text));
+    if(!desc&&english){
+      const englishText=normalize(english.flavor_text);
+      try{desc=await translateDescriptionToPolish(englishText)}
+      catch(translationError){
+        // Nie blokuj wpisu, jeśli zewnętrzny translator chwilowo nie działa.
+        desc=englishText;
+      }
+    }
     if(desc)creature.desc=desc;
     const typeResponse=await fetch("https://pokeapi.co/api/v2/pokemon/"+creature.dex);
     if(typeResponse.ok){
@@ -350,7 +357,10 @@ async function loadListDescription(creature){
     update();
   }catch(error){
     const descNode=document.querySelector('[data-description="'+creature.dex+'"]');
-    if(descNode)descNode.textContent=creature.desc&&!creature.desc.startsWith("Otwórz szczegóły Pokédexu")?creature.desc:"Nie udało się pobrać opisu — kliknij, aby spróbować ponownie.";
+    if(descNode){
+      descNode.textContent=creature.desc&&!creature.desc.startsWith("Otwórz szczegóły Pokédexu")?creature.desc:"Opis chwilowo niedostępny — kliknij kafelek, aby spróbować ponownie.";
+    }
+    console.warn("Nie udało się pobrać danych Pokédexu dla #"+creature.dex,error);
   }finally{listDescriptionLoads.delete(creature.dex)}
 }
 async function translateDescriptionToPolish(text){
