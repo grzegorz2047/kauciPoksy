@@ -76,6 +76,25 @@ footer{margin-top:26px;padding:16px 18px;border:1px solid #f58a91;background:#7c
 .creature:not(.locked){border-color:#d8f5d9}
 @media(max-width:760px){.art{height:150px;min-height:150px;padding:6px}.art img{transform:scale(.94)}.creature.locked .art img{transform:scale(.88)}}
 @media(max-width:390px){.art{height:132px;min-height:132px}}
+
+/* Desktop Pokédex grid: wider cards and unmistakable locked/unlocked states */
+@media(min-width:1000px){.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.creature{padding:15px}.art{height:190px;min-height:190px}}
+@media(min-width:761px) and (max-width:999px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}}
+.creature.locked{background:linear-gradient(155deg,#e3e8eb,#cbd5da);color:#25313a;border:2px solid #8797a1;border-bottom:4px solid #65747d;box-shadow:0 4px 0 #76172b;opacity:1;filter:none}
+.creature.locked .art{background:linear-gradient(145deg,#d5e0e2,#b7c8cc);border:2px solid #91a7ad}
+.creature.locked .art img{filter:grayscale(1) brightness(.72) contrast(1.08);opacity:.9;transform:scale(.94)}
+.creature.locked .dex-number{color:#435863}
+.creature.locked h3{color:#1b2b33}
+.creature.locked p{color:#435760}
+.creature.locked .meta{color:#724d13;font-weight:800}
+.creature.locked .progress{background:#aab8bd;border:1px solid #83959d}
+.creature.locked .progress span{background:#6c7e87}
+.creature.locked .wiki-link{color:#075b78}
+.creature.locked:hover{border-color:#f3bd37;box-shadow:0 4px 0 #76172b,0 0 0 2px #f3bd37}
+.creature:not(.locked){background:linear-gradient(155deg,#f3fff0,#d5efdc);color:#18352d;border:2px solid #64b88a;border-bottom:4px solid #39865d}
+.creature:not(.locked) .art{background:linear-gradient(145deg,#d2f3e8,#f5fbe4);border-color:#8fcdb4}
+.creature:not(.locked) .dex-number{color:#22704f}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body><main>
