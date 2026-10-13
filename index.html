@@ -54,23 +54,42 @@ $("export").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(st
 $("reset").addEventListener("click",async()=>{if(confirm("Na pewno usunąć całą kolekcję z tej przeglądarki? Tej operacji nie można cofnąć.")){state={version:1,xp:0,scans:0,entries:{}};await store.save(state);render();message("Zapis wyczyszczony.")}});
 async function startCamera(){
   try{
-    if("BarcodeDetector" in window){
-      detector=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
-      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
-      $("video").srcObject=stream;
-      $("video").classList.add("active");
-      await $("video").play();
-      scanning=true;$("start").disabled=true;$("stop").disabled=false;
-      message("Kamera działa — ustaw kod w kadrze.");
-      scanLoop();
+    if(!window.isSecureContext){
+      message("Kamera wymaga bezpiecznego połączenia HTTPS. Otwórz stronę przez https://.");
       return;
     }
-    if(!window.ZXingBrowser){message("Nie udało się załadować skanera. Sprawdź internet lub wpisz kod ręcznie.");return}
-    const reader=new ZXingBrowser.BrowserMultiFormatReader();
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      message("Ta przeglądarka nie udostępnia dostępu do kamery. Otwórz stronę w aktualnym Chrome lub Safari.");
+      return;
+    }
+    // Poproś o zgodę od razu po kliknięciu, zanim sprawdzimy dostępność skanera.
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
+    $("video").srcObject=stream;
     $("video").classList.add("active");
-    $("start").disabled=true;$("stop").disabled=false;
-    message("Uruchamiam skaner zgodności — zezwól na dostęp do kamery.");
-    zxingControls=await reader.decodeFromVideoDevice(undefined,$("video"),(result,error)=>{
+    await $("video").play();
+    $("start").disabled=true;
+    $("stop").disabled=false;
+
+    if("BarcodeDetector" in window){
+      try{
+        detector=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]});
+        scanning=true;
+        message("Kamera działa — ustaw kod w kadrze.");
+        scanLoop();
+        return;
+      }catch(e){
+        detector=null;
+      }
+    }
+
+    if(!window.ZXingBrowser){
+      message("Kamera działa, ale nie załadowała się biblioteka skanera. Sprawdź internet i odśwież stronę.");
+      stopCamera();
+      return;
+    }
+    const reader=new ZXingBrowser.BrowserMultiFormatReader();
+    message("Kamera działa — uruchamiam odczyt kodu.");
+    zxingControls=await reader.decodeFromStream(stream,$("video"),(result,error)=>{
       if(result){
         const code=result.getText();
         if(code&&code!==scanTimer){
@@ -82,7 +101,16 @@ async function startCamera(){
     });
     message("Kamera działa — ustaw kod kreskowy w kadrze.");
   }catch(e){
-    message("Nie udało się uruchomić kamery. Sprawdź zgodę na kamerę, połączenie HTTPS i dostęp do internetu.");
+    const name=e&&e.name?e.name:"";
+    if(name==="NotAllowedError"||name==="SecurityError"){
+      message("Brak dostępu do kamery. Zezwól na kamerę w ustawieniach przeglądarki dla tej strony.");
+    }else if(name==="NotFoundError"||name==="DevicesNotFoundError"){
+      message("Nie znaleziono kamery w tym urządzeniu.");
+    }else if(name==="NotReadableError"||name==="TrackStartError"){
+      message("Kamera jest zajęta przez inną aplikację. Zamknij ją i spróbuj ponownie.");
+    }else{
+      message("Nie udało się uruchomić kamery ("+(name||"błąd nieznany")+"). Sprawdź uprawnienia i HTTPS.");
+    }
     stopCamera();
   }
 }
