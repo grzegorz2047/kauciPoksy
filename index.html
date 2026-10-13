@@ -317,9 +317,12 @@ $("pokemonModalOk").addEventListener("click",closePokemonPopup);
 $("pokemonModal").addEventListener("click",e=>{if(e.target===$("pokemonModal"))closePokemonPopup()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closePokemonPopup()});
 async function lookupEligibleBeverage(ean){
-  // Verified retail-catalog entry: WK Dzik Energy Peach Zero 500 ml, can.
+  // Confirmed product entries: bypass catalog outages for known drinks.
   if(ean==="5904988312221"){
     return {ok:true,productName:"WK Dzik Energy Peach Zero 500 ml (puszka)"};
+  }
+  if(ean==="4251760806876"){
+    return {ok:true,productName:"Thomas Henry Piña Asada"};
   }
   const fields="product_name,categories,categories_tags,packaging,packaging_tags,brands,quantity";
   const endpoints=[
