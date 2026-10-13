@@ -53,52 +53,47 @@ $("add").addEventListener("click",()=>collect($("ean").value));$("ean").addEvent
 $("export").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="kaucja-poksy-zapis.json";a.click();URL.revokeObjectURL(url);message("Przygotowano kopię zapisu.")});
 $("reset").addEventListener("click",async()=>{if(confirm("Na pewno usunąć całą kolekcję z tej przeglądarki? Tej operacji nie można cofnąć.")){state={version:1,xp:0,scans:0,entries:{}};await store.save(state);render();message("Zapis wyczyszczony.")}});
 async function startCamera(){
+  if(!window.isSecureContext){
+    message("Kamera wymaga bezpiecznego połączenia HTTPS. Otwórz stronę przez https://.");
+    return;
+  }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    message("Ta przeglądarka nie udostępnia kamery. Otwórz stronę w aktualnym Safari.");
+    return;
+  }
+  if(!window.ZXingBrowser || !window.ZXingBrowser.BrowserMultiFormatReader){
+    message("Nie załadował się skaner kodów (ZXing). Sprawdź połączenie z internetem i odśwież stronę.");
+    return;
+  }
   try{
-    if(!window.isSecureContext){
-      message("Kamera wymaga bezpiecznego połączenia HTTPS. Otwórz stronę przez https://.");
-      return;
-    }
-    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      message("Ta przeglądarka nie udostępnia dostępu do kamery. Otwórz stronę w aktualnym Chrome lub Safari.");
-      return;
-    }
-    // Poproś o zgodę od razu po kliknięciu, zanim sprawdzimy dostępność skanera.
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
-    $("video").srcObject=stream;
-    $("video").classList.add("active");
-    await $("video").play();
     $("start").disabled=true;
-    $("stop").disabled=false;
-
-    if(!window.ZXingBrowser){
-      message("Kamera działa, ale nie załadowała się biblioteka skanera. Sprawdź internet i odśwież stronę.");
-      stopCamera();
-      return;
-    }
-    const reader=new ZXingBrowser.BrowserMultiFormatReader();
-    message("Kamera działa — uruchamiam odczyt kodu.");
-    zxingControls=await reader.decodeFromStream(stream,$("video"),(result,error)=>{
+    $("video").classList.add("active");
+    const reader=new ZXingBrowser.BrowserMultiFormatReader(undefined,{delayBetweenScanAttempts:150,delayBetweenScanSuccess:500});
+    message("Uruchamiam kamerę i skaner kodów…");
+    // Let ZXing acquire the camera and attach its stream to the preview itself.
+    // This is the library's standard path and avoids attaching the same stream twice on iOS Safari.
+    zxingControls=await reader.decodeFromVideoDevice(undefined,$("video"),(result,error)=>{
       if(result){
         const code=result.getText();
-        if(code&&code!==scanTimer){
+        if(code && code!==scanTimer){
           scanTimer=code;
           collect(code).catch(()=>message("Odczytano kod, ale nie udało się zapisać wyniku."));
           setTimeout(()=>{scanTimer=null},1800);
         }
       }
-      // Checksum/format errors are normal while the camera sees an incomplete barcode.
     });
-    message("Kamera działa — ustaw kod kreskowy w kadrze, wypełnij nim obraz i trzymaj telefon nieruchomo.");
+    $("stop").disabled=false;
+    message("Skaner działa. Ustaw cały kod kreskowy w kadrze, w dobrym świetle i trzymaj telefon nieruchomo.");
   }catch(e){
     const name=e&&e.name?e.name:"";
     if(name==="NotAllowedError"||name==="SecurityError"){
-      message("Brak dostępu do kamery. Zezwól na kamerę w ustawieniach przeglądarki dla tej strony.");
+      message("Brak dostępu do kamery. Zezwól na kamerę w ustawieniach Safari dla tej strony.");
     }else if(name==="NotFoundError"||name==="DevicesNotFoundError"){
       message("Nie znaleziono kamery w tym urządzeniu.");
     }else if(name==="NotReadableError"||name==="TrackStartError"){
       message("Kamera jest zajęta przez inną aplikację. Zamknij ją i spróbuj ponownie.");
     }else{
-      message("Nie udało się uruchomić kamery ("+(name||"błąd nieznany")+"). Sprawdź uprawnienia i HTTPS.");
+      message("Nie udało się uruchomić skanera ("+(name||"błąd nieznany")+"). Odśwież stronę i spróbuj ponownie.");
     }
     stopCamera();
   }
