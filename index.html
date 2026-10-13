@@ -329,20 +329,24 @@ async function lookupEligibleBeverage(ean){
     "https://world.openfoodfacts.org/api/v2/product/",
     "https://world.openfoodfacts.net/api/v2/product/"
   ];
-  let data=null,requestFailed=false;
+  let data=null,requestFailed=false,notFound=false;
   for(const base of endpoints){
     try{
       const response=await fetch(base+encodeURIComponent(ean)+".json?fields="+fields,{headers:{"Accept":"application/json"}});
+      if(response.status===404){notFound=true;continue}
       if(!response.ok){requestFailed=true;continue}
       const candidate=await response.json();
       if(candidate.status===1&&candidate.product){data=candidate;break}
-      if(candidate.status===0)data=candidate;
+      if(candidate.status===0){notFound=true;continue}
+      requestFailed=true;
     }catch(err){requestFailed=true}
   }
   if(!data||data.status!==1||!data.product){
     return {ok:false,reason:requestFailed
-      ?"Baza produktów jest chwilowo niedostępna albo nie odpowiada. Spróbuj ponownie za chwilę; niczego nie dodano."
-      :"Nie znaleziono tego kodu w bazie produktów. Nie dodano Pokémona."};
+      ?"Nie udało się sprawdzić kodu w bazie (błąd sieci lub serwera). Spróbuj ponownie; kod nie został uznany za poprawny."
+      :notFound
+        ?"Nie znaleziono tego kodu w bazie produktów. Produkt może nie być dodany do Open Food Facts; niczego nie dodano."
+        :"Baza nie zwróciła rozpoznawalnego wyniku. Spróbuj ponownie; niczego nie dodano."};
   }
   const p=data.product;
   const categoryText=[p.product_name||"",p.brands||"",p.categories||"",...(p.categories_tags||[])].join(" ").toLocaleLowerCase("pl");
