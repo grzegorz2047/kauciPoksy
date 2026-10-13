@@ -41,7 +41,7 @@ class LocalCollectionStore{
  async load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||{version:1,xp:0,scans:0,entries:{}}}catch{return {version:1,xp:0,scans:0,entries:{}}}}
  async save(data){localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}
 }
-const store=new LocalCollectionStore();let state;let stream=null;let scanTimer=null;let detector=null;let scanning=false;let zxingControls=null;
+const store=new LocalCollectionStore();let state;let stream=null;let scanTimer=null;let detector=null;let scanning=false;let zxingControls=null;let scanAttempts=0;let lastScanDebug=0;
 const $=id=>document.getElementById(id);
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function chooseCreature(ean){return CREATURES[hash(ean)%CREATURES.length]}
