@@ -73,16 +73,19 @@ async function startCamera(){
     // Let ZXing acquire the camera and attach its stream to the preview itself.
     // This is the library's standard path and avoids attaching the same stream twice on iOS Safari.
     scanAttempts=0;lastScanDebug=Date.now();
-    zxingControls=await reader.decodeFromVideoDevice(undefined,$("video"),(result,error)=>{
+    const onDecode=(result,error)=>{
       scanAttempts++;
-      if(error && !["NotFoundException","ChecksumException","FormatException"].includes(error.name)){
+      // A frame without a readable barcode is normal during continuous scanning.
+      const errorText=error&&String(error.message||error);
+      const normalMiss=!!(!result && errorText && /No MultiFormat Readers were able to detect the code|NotFoundException/i.test(errorText));
+      if(error && !normalMiss && !["NotFoundException","ChecksumException","FormatException","e"].includes(error.name)){
         message("Błąd dekodera: "+(error.name||"nieznany")+" — "+(error.message||"brak szczegółów"));
       }else if(Date.now()-lastScanDebug>4000){
         lastScanDebug=Date.now();
         const video=$("video");
         const track=video.srcObject&&video.srcObject.getVideoTracks?video.srcObject.getVideoTracks()[0]:null;
         const settings=track&&track.getSettings?track.getSettings():{};
-        message("Skaner analizuje obraz ("+(video.videoWidth||0)+"×"+(video.videoHeight||0)+", prób: "+scanAttempts+(settings.facingMode?", kamera: "+settings.facingMode:"")+"). Pokaż cały kod kreskowy z bliska i bez odblasków.");
+        message("Skaner analizuje obraz ("+(video.videoWidth||0)+"×"+(video.videoHeight||0)+", prób: "+scanAttempts+(settings.facingMode?", kamera: "+settings.facingMode:"")+"). Ustaw kod poziomo, wypełnij nim kadr i unikaj odblasków.");
       }
       if(result){
         const code=result.getText();
@@ -92,7 +95,13 @@ async function startCamera(){
           setTimeout(()=>{scanTimer=null},1800);
         }
       }
-    });
+    };
+    // Prefer the rear camera on phones instead of accepting the browser's default camera.
+    zxingControls=await reader.decodeFromConstraints(
+      {video:{facingMode:{ideal:"environment"}}},
+      $("video"),
+      onDecode
+    );
     $("stop").disabled=false;
     message("Skaner działa. Ustaw cały kod kreskowy w kadrze, w dobrym świetle i trzymaj telefon nieruchomo.");
   }catch(e){
