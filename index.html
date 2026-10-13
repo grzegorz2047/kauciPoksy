@@ -243,10 +243,13 @@ async function showPokedexDetails(creature){
     const pokemon=await pokemonResponse.json(),species=await speciesResponse.json();
     const typeNames={normal:"Normalny",fire:"Ogień",water:"Woda",electric:"Elektryczny",grass:"Trawa",ice:"Lód",fighting:"Walka",poison:"Trujący",ground:"Ziemia",flying:"Latający",psychic:"Psychiczny",bug:"Robak",rock:"Skała",ghost:"Duch",dragon:"Smok",dark:"Mroczny",steel:"Stal",fairy:"Wróżka"};
     creature.type=pokemon.types.map(t=>typeNames[t.type.name]||t.type.name).join(" / ");
-    const flavor=species.flavor_text_entries.find(x=>x.language.name==="en")||species.flavor_text_entries[0];
-    creature.desc=flavor?flavor.flavor_text.replace(/[\n\f]/g," ").replace(/\s+/g," ").trim():"Brak opisu w źródle danych.";
+    // Nie nadpisuj polskiego opisu angielskim tekstem z PokéAPI.
+    const flavor=species.flavor_text_entries.find(x=>x.language.name==="pl");
+    const polishFlavor=flavor?flavor.flavor_text.replace(/[\n\f]/g," ").replace(/\s+/g," ").trim():"";
+    const hasPolishDescription=creature.desc && !creature.desc.startsWith("Otwórz szczegóły Pokédexu");
+    const displayedDescription=polishFlavor || (hasPolishDescription?creature.desc:"Polski opis tego Pokémona nie jest jeszcze dostępny. Nazwa i typ pozostają wyświetlane po polsku.");
     $("pokemonModalType").textContent="Typ: "+creature.type;
-    $("pokemonModalDesc").textContent=creature.desc;
+    $("pokemonModalDesc").textContent=displayedDescription;
   }catch(err){
     $("pokemonModalType").textContent="Typ: "+creature.type;
     $("pokemonModalDesc").textContent=creature.desc+" (Nie udało się pobrać dodatkowych danych — sprawdź połączenie z internetem.)";
