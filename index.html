@@ -502,6 +502,10 @@ async function collect(raw){
     message("Potwierdzono napój: "+product.productName+". Duplikat! "+creature.name+" zdobywa 1 XP.");
   }else{
     state.entries[ean]={ean,creatureId:creature.id,xp:0,times:1,firstSeen:now,lastSeen:now};
+    // Po pierwszym odkryciu przełącz widok na zebrane Pokémony.
+    if($("collectionFilter")&&$("collectionFilter").value==="all"&&Object.keys(state.entries).length===1){
+      $("collectionFilter").value="found";
+    }
     playCaptureSound();
     message("Napój potwierdzony: "+product.productName+". Odkryto: "+creature.name+" ✨! +5 XP");
   }
@@ -617,6 +621,13 @@ async function startCamera(){
 }
 function stopCamera(){scanGeneration++;scanning=false;if(zxingControls){try{zxingControls.stop()}catch{}zxingControls=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null} $("video").srcObject=null;$("video").classList.remove("active");$("start").disabled=false;$("stop").disabled=true}
 $("start").addEventListener("click",()=>{unlockCaptureAudio();startCamera()});$("stop").addEventListener("click",stopCamera);
-store.load().then(data=>{state={version:1,xp:Number(data.xp)||0,scans:Number(data.scans)||0,entries:data.entries&&typeof data.entries==="object"?data.entries:{}};render()});
+store.load().then(data=>{
+  state={version:1,xp:Number(data.xp)||0,scans:Number(data.scans)||0,entries:data.entries&&typeof data.entries==="object"?data.entries:{}};
+  // Przy otwarciu aplikacji pokaż odkryte wpisy, jeśli kolekcja nie jest pusta.
+  if(Object.keys(state.entries).length>0&&$("collectionFilter")&&$("collectionFilter").value==="all"){
+    $("collectionFilter").value="found";
+  }
+  render();
+});
 window.addEventListener("pagehide",stopCamera);
 </script></body></html>
