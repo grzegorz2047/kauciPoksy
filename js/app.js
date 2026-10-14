@@ -32,8 +32,10 @@ function render(){
   });
   $("resultCount").textContent=visible.length+" Pokémonów";
   $("collection").innerHTML=visible.map(c=>{
-   const entry=Object.values(entries).filter(e=>e.creatureId===c.id).sort((a,b)=>b.xp-a.xp)[0];
-   const unlocked=!!entry,level=entry?1+Math.floor(entry.xp/5):0;
+   const creatureEntries=Object.values(entries).filter(e=>e.creatureId===c.id);
+   const unlocked=creatureEntries.length>0;
+   const creatureXp=creatureEntries.reduce((sum,e)=>sum+(Number(e.xp)||0),0);
+   const level=unlocked?1+Math.floor(creatureXp/5):0;
    const desc=unlocked?(c.desc&&!c.desc.startsWith("Otwórz szczegóły Pokédexu")&&!c.desc.includes("\\n")?c.desc:"Kliknij kafelek, aby pobrać opis z Pokédexu."):'Jeszcze nieodkryty — kliknij, aby poznać wpis Pokédexu.';
    const cleanDesc=desc.replaceAll("\\n"," ").replaceAll("\\f"," ").replace(/[\n\f\r\t]/g," ").replace(/\s+/g," ").trim();
    return '<article class="creature '+(unlocked?'':'locked')+'" data-pokemon="'+c.dex+'" tabindex="0" role="button" aria-label="Szczegóły: '+c.name+'"><div class="art"><img src="'+c.image+'" alt="'+c.name+'" loading="lazy" onerror="this.style.opacity=.15"></div><div class="dex-number">NATIONAL DEX #'+String(c.dex).padStart(3,'0')+'</div><h3>'+c.name+'</h3><p data-description="'+c.dex+'">'+cleanDesc+'</p><div class="meta"><span data-type="'+c.dex+'">'+(unlocked?c.type:'Nieodkryty')+'</span><span>'+(unlocked?'Poziom '+level:'Zablokowany')+'</span></div><div class="progress"><span style="width:'+(unlocked?Math.min(100,20+level*10):0)+'%"></span></div><a class="wiki-link" href="'+c.wiki+'" target="_blank" rel="noopener noreferrer">Wiki Pokémon ↗</a></article>';
@@ -221,33 +223,44 @@ async function collect(raw){
   }
   if(!product.ok){
     if(product.needsConfirmation){
-      const detail=product.productName?"\n\nProdukt z bazy: "+product.productName:"";
-      const accepted=window.confirm(product.reason+detail+"\n\nPotwierdzasz, że skanowany produkt to napój w butelce lub puszce?");
+      const detail=product.productName?"\\n\\nProdukt z bazy: "+product.productName:"";
+      const accepted=window.confirm(product.reason+detail+"\\n\\nPotwierdzasz, że skanowany produkt to napój w butelce lub puszce?");
       if(!accepted){message("Nie dodano Pokémona — produkt nie został potwierdzony.");return false}
       product={ok:true,productName:product.productName||"Napój (potwierdzony ręcznie)"};
     }else{message(product.reason);return false}
   }
-  let previous=state.entries[ean];
-  const isDuplicate=!!previous;
-  let creature=previous?CREATURES.find(c=>c.id===previous.creatureId):chooseCreature(ean);
-  if(!creature)creature=chooseCreature(ean);
+
+  // Ten sam EAN to ponowny skan produktu. Inny EAN może wylosować
+  // Pokémon już obecny w kolekcji — wtedy też jest duplikatem postaci.
+  const previous=state.entries[ean];
+  const creature=previous
+    ? CREATURES.find(c=>c.id===previous.creatureId)||chooseCreature(ean)
+    : chooseCreature(ean);
+  const creatureAlreadyFound=Object.values(state.entries).some(entry=>entry.creatureId===creature.id);
+  const isDuplicate=!!previous||creatureAlreadyFound;
+  const now=new Date().toISOString();
+
   state.scans=(Number(state.scans)||0)+1;
   state.xp=(Number(state.xp)||0)+(isDuplicate?1:5);
-  const now=new Date().toISOString();
-  if(isDuplicate){
-    previous.creatureId=creature.id;
+
+  if(previous){
     previous.xp=(Number(previous.xp)||0)+1;
     previous.times=(Number(previous.times)||1)+1;
     previous.lastSeen=now;
-    message("Potwierdzono napój: "+product.productName+". Duplikat! "+creature.name+" zdobywa 1 XP.");
   }else{
-    state.entries[ean]={ean,creatureId:creature.id,xp:0,times:1,firstSeen:now,lastSeen:now};
-    // Po pierwszym odkryciu przełącz widok na zebrane Pokémony.
-    if($("collectionFilter")&&$("collectionFilter").value==="all"&&Object.keys(state.entries).length===1){
-      $("collectionFilter").value="found";
-    }
+    state.entries[ean]={ean,creatureId:creature.id,xp:isDuplicate?1:0,times:1,firstSeen:now,lastSeen:now};
+  }
+
+  if(isDuplicate){
+    message("Napój potwierdzony: "+product.productName+". Duplikat "+creature.name+" — +1 XP.");
+  }else{
+    // Dźwięk tylko przy pierwszym odkryciu konkretnej postaci.
     playCaptureSound();
-    message("Napój potwierdzony: "+product.productName+". Odkryto: "+creature.name+" ✨! +5 XP");
+    message("Napój potwierdzony: "+product.productName+". Nowy Pokémon: "+creature.name+" ✨! +5 XP");
+  }
+
+  if($("collectionFilter")&&$("collectionFilter").value==="all"&&Object.keys(state.entries).length===1){
+    $("collectionFilter").value="found";
   }
   try{showPokemonPopup(creature,isDuplicate)}catch(err){console.error("Nie udało się pokazać okna Pokémona",err)}
   $("ean").value="";
