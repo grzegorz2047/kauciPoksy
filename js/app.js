@@ -170,7 +170,7 @@ async function playCaptureSound(){
     if(ctx.state!=="running")return;
     // Oryginalna, lokalnie syntezowana fanfara w stylu retro 8-bit.
     const notes=[659.25,783.99,987.77,1318.51,987.77,1174.66,1567.98],start=ctx.currentTime+0.04;
-    notes.forEach((frequency,index)=>{const at=start+index*0.12,osc=ctx.createOscillator(),gain=ctx.createGain();osc.type="square";osc.frequency.setValueAtTime(frequency,at);gain.gain.setValueAtTime(0.0001,at);gain.gain.exponentialRampToValueAtTime(0.075,at+0.012);gain.gain.exponentialRampToValueAtTime(0.0001,at+0.105);osc.connect(gain);gain.connect(ctx.destination);osc.start(at);osc.stop(at+0.11)});
+    notes.forEach((frequency,index)=>{const at=start+index*0.12,osc=ctx.createOscillator(),gain=ctx.createGain();osc.type="square";osc.frequency.setValueAtTime(frequency,at);gain.gain.setValueAtTime(0.0001,at);gain.gain.exponentialRampToValueAtTime(0.14,at+0.012);gain.gain.exponentialRampToValueAtTime(0.0001,at+0.105);osc.connect(gain);gain.connect(ctx.destination);osc.start(at);osc.stop(at+0.11)});
   }catch(err){console.warn("Nie udało się odtworzyć dźwięku złapania",err);message("Dźwięk został zablokowany przez przeglądarkę. Kliknij „Testuj fanfarę” i sprawdź głośność urządzenia.")}
 }
 // 6. WERYFIKACJA KODU PRODUKTU
