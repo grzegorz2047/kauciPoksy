@@ -157,21 +157,54 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closePokemonPopup()}
 // 5. DŹWIĘK ZDOBYCIA POKÉMONA
 let captureAudioContext=null;
 function unlockCaptureAudio(){
-  try{const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;if(!captureAudioContext)captureAudioContext=new AudioCtx();if(captureAudioContext.state==="suspended")captureAudioContext.resume().catch(()=>{});}catch(err){console.debug("Dźwięk złapania niedostępny",err)}
-}
-async function playCaptureSound(){
   try{
-    const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtx){message("Ta przeglądarka nie obsługuje Web Audio API.");return false}
     if(!captureAudioContext)captureAudioContext=new AudioCtx();
-    const ctx=captureAudioContext;if(ctx.state==="closed")return;
-    // Wznowienie musi się zakończyć przed zaplanowaniem nut; inaczej po skanowaniu
-    // asynchronicznym część przeglądarek może odrzucić lub zgubić dźwięk.
-    if(ctx.state==="suspended")await ctx.resume();
-    if(ctx.state!=="running")return;
-    // Oryginalna, lokalnie syntezowana fanfara w stylu retro 8-bit.
-    const notes=[659.25,783.99,987.77,1318.51,987.77,1174.66,1567.98],start=ctx.currentTime+0.04;
-    notes.forEach((frequency,index)=>{const at=start+index*0.12,osc=ctx.createOscillator(),gain=ctx.createGain();osc.type="square";osc.frequency.setValueAtTime(frequency,at);gain.gain.setValueAtTime(0.0001,at);gain.gain.exponentialRampToValueAtTime(0.14,at+0.012);gain.gain.exponentialRampToValueAtTime(0.0001,at+0.105);osc.connect(gain);gain.connect(ctx.destination);osc.start(at);osc.stop(at+0.11)});
-  }catch(err){console.warn("Nie udało się odtworzyć dźwięku złapania",err);message("Dźwięk został zablokowany przez przeglądarkę. Kliknij „Testuj fanfarę” i sprawdź głośność urządzenia.")}
+    // Safari wymaga wznowienia kontekstu bezpośrednio w reakcji na gest użytkownika.
+    if(captureAudioContext.state!=="running")captureAudioContext.resume().catch(err=>{
+      console.warn("Nie udało się wznowić dźwięku",err);
+      message("Safari zablokowało dźwięk. Sprawdź tryb cichy i ustawienia witryny.");
+    });
+    return true;
+  }catch(err){
+    console.warn("Dźwięk złapania niedostępny",err);
+    message("Nie udało się uruchomić dźwięku w tej przeglądarce.");
+    return false;
+  }
+}
+function playCaptureSound(){
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx){message("Safari nie udostępnia Web Audio API w tej karcie.");return}
+  try{
+    if(!captureAudioContext)captureAudioContext=new AudioCtx();
+    const ctx=captureAudioContext;
+    const play=()=>{
+      if(ctx.state!=="running"){message("Dźwięk jest wstrzymany. Kliknij „Testuj fanfarę” jeszcze raz.");return}
+      // Krótka, wyraźniejsza fanfara 8-bit; oscylatory tworzymy dopiero po wznowieniu AudioContext.
+      const notes=[659.25,783.99,987.77,1318.51,987.77,1174.66,1567.98];
+      const start=ctx.currentTime+0.03;
+      notes.forEach((frequency,index)=>{
+        const at=start+index*0.14,osc=ctx.createOscillator(),gain=ctx.createGain();
+        osc.type="triangle";
+        osc.frequency.setValueAtTime(frequency,at);
+        gain.gain.setValueAtTime(0.0001,at);
+        gain.gain.exponentialRampToValueAtTime(0.28,at+0.018);
+        gain.gain.exponentialRampToValueAtTime(0.0001,at+0.125);
+        osc.connect(gain);gain.connect(ctx.destination);
+        osc.start(at);osc.stop(at+0.13);
+      });
+      message("Jeśli nie słyszysz fanfary, sprawdź tryb cichy i wyjście audio Safari.");
+    };
+    if(ctx.state==="running"){play();return}
+    ctx.resume().then(play).catch(err=>{
+      console.warn("Nie udało się odtworzyć dźwięku złapania",err);
+      message("Safari zablokowało dźwięk. Kliknij „Testuj fanfarę” ponownie, sprawdź tryb cichy i głośność.");
+    });
+  }catch(err){
+    console.warn("Nie udało się odtworzyć dźwięku złapania",err);
+    message("Błąd odtwarzania fanfary. Sprawdź ustawienia dźwięku Safari.");
+  }
 }
 // 6. WERYFIKACJA KODU PRODUKTU
 async function lookupEligibleBeverage(ean){
