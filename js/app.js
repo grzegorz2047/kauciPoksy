@@ -9,7 +9,7 @@ class LocalCollectionStore{
  async load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||{version:1,xp:0,scans:0,entries:{}}}catch{return {version:1,xp:0,scans:0,entries:{}}}}
  async save(data){localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}
 }
-const store=new LocalCollectionStore();let state;let stream=null;let scanTimer=null;let detector=null;let scanning=false;let zxingControls=null;let scanAttempts=0;let lastScanDebug=0;let scanSucceeded=false;let scanGeneration=0;
+const store=new LocalCollectionStore();let state;let scanTimer=null;let detector=null;let scanning=false;let zxingControls=null;let scanAttempts=0;let lastScanDebug=0;let scanSucceeded=false;let scanGeneration=0;
 // 2. FUNKCJE POMOCNICZE
 // Skrót $ wyszukuje element HTML po jego id.
 const $=id=>document.getElementById(id);
@@ -34,11 +34,10 @@ function render(){
   $("collection").innerHTML=visible.map(c=>{
    const entry=Object.values(entries).filter(e=>e.creatureId===c.id).sort((a,b)=>b.xp-a.xp)[0];
    const unlocked=!!entry,level=entry?1+Math.floor(entry.xp/5):0;
-   const desc=unlocked?(c.desc&&!c.desc.startsWith("Otwórz szczegóły Pokédexu")&&!c.desc.includes("\\n")?c.desc:"Pobieram polski opis…"):'Jeszcze nieodkryty — kliknij, aby poznać wpis Pokédexu.';
+   const desc=unlocked?(c.desc&&!c.desc.startsWith("Otwórz szczegóły Pokédexu")&&!c.desc.includes("\\n")?c.desc:"Kliknij kafelek, aby pobrać opis z Pokédexu."):'Jeszcze nieodkryty — kliknij, aby poznać wpis Pokédexu.';
    const cleanDesc=desc.replaceAll("\\n"," ").replaceAll("\\f"," ").replace(/[\n\f\r\t]/g," ").replace(/\s+/g," ").trim();
    return '<article class="creature '+(unlocked?'':'locked')+'" data-pokemon="'+c.dex+'" tabindex="0" role="button" aria-label="Szczegóły: '+c.name+'"><div class="art"><img src="'+c.image+'" alt="'+c.name+'" loading="lazy" onerror="this.style.opacity=.15"></div><div class="dex-number">NATIONAL DEX #'+String(c.dex).padStart(3,'0')+'</div><h3>'+c.name+'</h3><p data-description="'+c.dex+'">'+cleanDesc+'</p><div class="meta"><span data-type="'+c.dex+'">'+(unlocked?c.type:'Nieodkryty')+'</span><span>'+(unlocked?'Poziom '+level:'Zablokowany')+'</span></div><div class="progress"><span style="width:'+(unlocked?Math.min(100,20+level*10):0)+'%"></span></div><a class="wiki-link" href="'+c.wiki+'" target="_blank" rel="noopener noreferrer">Wiki Pokémon ↗</a></article>';
   }).join('');
-  visible.filter(c=>found.has(c.id)).forEach(c=>loadListDescription(c));
 }
 function message(text){$("status").textContent=text}
 function showPokemonPopup(creature,isDuplicate){
@@ -138,6 +137,11 @@ async function showPokedexDetails(creature){
     }
     $("pokemonModalType").textContent="Typ: "+creature.type;
     $("pokemonModalDesc").textContent=displayedDescription || "Nie udało się pobrać opisu. Spróbuj ponownie za chwilę.";
+    if(displayedDescription)creature.desc=displayedDescription;
+    const cardDescription=document.querySelector('[data-description="'+creature.dex+'"]');
+    const cardType=document.querySelector('[data-type="'+creature.dex+'"]');
+    if(cardDescription&&displayedDescription)cardDescription.textContent=displayedDescription;
+    if(cardType)cardType.textContent=creature.type||"Typ nieznany";
   }catch(err){
     $("pokemonModalType").textContent="Typ: "+creature.type;
     $("pokemonModalDesc").textContent=creature.desc+" (Nie udało się pobrać dodatkowych danych — sprawdź połączenie z internetem.)";
@@ -303,14 +307,7 @@ async function startCamera(){
           scanSucceeded=true;
           scanTimer=code;
           scanGeneration++;
-          if(zxingControls){try{zxingControls.stop()}catch{}zxingControls=null}
-          const video=$("video");
-          const tracks=video.srcObject&&video.srcObject.getTracks?video.srcObject.getTracks():[];
-          tracks.forEach(track=>track.stop());
-          video.srcObject=null;
-          video.classList.remove("active");
-          $("start").disabled=false;
-          $("stop").disabled=true;
+          stopCamera();
           collect(code).then(()=>{scanTimer=null}).catch(()=>message("Odczytano kod, ale nie udało się zapisać wyniku."));
           return;
         }
@@ -356,7 +353,22 @@ async function startCamera(){
     stopCamera();
   }
 }
-function stopCamera(){scanGeneration++;scanning=false;if(zxingControls){try{zxingControls.stop()}catch{}zxingControls=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null} $("video").srcObject=null;$("video").classList.remove("active");$("start").disabled=false;$("stop").disabled=true}
+function stopCamera(){
+  scanGeneration++;
+  scanning=false;
+  if(zxingControls){try{zxingControls.stop()}catch(error){console.debug("Nie udało się zatrzymać kontrolera ZXing",error)}zxingControls=null}
+  const video=$("video");
+  // ZXing zwykle zarządza własnym strumieniem, ale jawnie zatrzymaj też
+  // wszystkie ścieżki przypięte do podglądu — na wypadek różnic przeglądarek.
+  const mediaStream=video.srcObject;
+  if(mediaStream&&typeof mediaStream.getTracks==="function"){
+    mediaStream.getTracks().forEach(track=>{try{track.stop()}catch(error){console.debug("Nie udało się zatrzymać ścieżki kamery",error)}});
+  }
+  video.srcObject=null;
+  video.classList.remove("active");
+  $("start").disabled=false;
+  $("stop").disabled=true;
+}
 $("start").addEventListener("click",()=>{unlockCaptureAudio();startCamera()});$("stop").addEventListener("click",stopCamera);
 // 9. URUCHOMIENIE APLIKACJI
 store.load().then(data=>{
